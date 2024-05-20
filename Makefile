@@ -6,6 +6,8 @@ GCCPARAMS = -m32 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti 
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
+VirtualBoxVM = /mnt/c/Program\ Files/Oracle/VirtualBox/VirtualBoxVM.exe
+
 objects = obj/loader.o \
           obj/gdt.o \
           obj/memorymanagement.o \
@@ -19,23 +21,12 @@ objects = obj/loader.o \
           obj/hardwarecommunication/pci.o \
           obj/drivers/keyboard.o \
           obj/drivers/mouse.o \
-          obj/drivers/vga.o \
-          obj/drivers/ata.o \
-          obj/gui/widget.o \
-          obj/gui/window.o \
-          obj/gui/desktop.o \
-          obj/net/etherframe.o \
-          obj/net/arp.o \
-          obj/net/ipv4.o \
-          obj/net/icmp.o \
-          obj/net/udp.o \
-          obj/net/tcp.o \
           obj/kernel.o
 
 
-run: mykernel.iso
-	(killall VirtualBox && sleep 1) || true
-	VirtualBox --startvm 'My Operating System' &
+run: clean mykernel.iso
+	(killall $(VirtualBoxVM) && sleep 1) || true
+	$(VirtualBoxVM) --startvm 'EminOS' &
 
 obj/%.o: src/%.cpp
 	mkdir -p $(@D)

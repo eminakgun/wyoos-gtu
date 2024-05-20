@@ -50,12 +50,46 @@ TaskManager::~TaskManager()
 {
 }
 
+Task* TaskManager::GetCurrent() {
+    return tasks[currentTask];
+}
+
 bool TaskManager::AddTask(Task* task)
 {
     if(numTasks >= 256)
         return false;
+   
     tasks[numTasks++] = task;
+    
+    if (currentTask == -1)
+    {
+        // main process
+        currentTask = 0;
+        tasks[0]->pcb.pid = 999;
+    }
     return true;
+}
+
+Task* TaskManager::AddTask() {
+    //Task* new_task = new Task(nullptr, nullptr);
+    
+    //tasks[numTasks++] = new_task; 
+    Task* new_task = tasks[numTasks++];
+    
+    //next_task = new_task;
+    new_task->pcb.state = READY;
+    new_task->pcb.pid = numTasks;
+    new_task->pcb.ppid = tasks[currentTask]->pcb.pid;
+
+    // copy stack of the current process to new task
+    for (size_t i = 0; i < sizeof(tasks[currentTask]->stack); i++){
+        new_task->stack[i] = tasks[currentTask]->stack[i];
+    }
+
+    //tasks[numTasks]->cpustate = 
+    //tasks[numTasks]->cpustate->ebx = (uint32_t)0;
+    
+    return new_task;
 }
 
 CPUState* TaskManager::Schedule(CPUState* cpustate)
@@ -68,6 +102,15 @@ CPUState* TaskManager::Schedule(CPUState* cpustate)
     
     if(++currentTask >= numTasks)
         currentTask %= numTasks;
+
+    printf("\nTaskManager::Schedule, currentTask:");
+    printInt(currentTask);
+    printf("\n");
+
+    printf("\nTaskManager::Schedule, numTasks:");
+    printInt(numTasks);
+    printf("\n");
+
     return tasks[currentTask]->cpustate;
 }
 

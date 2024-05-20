@@ -8,16 +8,19 @@
 
 namespace myos
 {
+
+    const uint32_t FORK_INT = 2;
     
     class SyscallHandler : public hardwarecommunication::InterruptHandler
     {
-        
+    private:
+        TaskManager* taskManager;
     public:
-        SyscallHandler(hardwarecommunication::InterruptManager* interruptManager, myos::common::uint8_t InterruptNumber);
+        SyscallHandler(hardwarecommunication::InterruptManager* interruptManager, myos::common::uint8_t InterruptNumber, TaskManager* taskManager);
         ~SyscallHandler();
         
         virtual myos::common::uint32_t HandleInterrupt(myos::common::uint32_t esp);
-
+        void fork(uint32_t esp);
     };
     
     
