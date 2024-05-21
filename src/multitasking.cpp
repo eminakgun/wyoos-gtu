@@ -51,6 +51,9 @@ TaskManager::~TaskManager()
 }
 
 Task* TaskManager::GetCurrent() {
+/*     printf("\nTaskManager::GetCurrent, currentTask:");
+    printInt(currentTask);
+    printf("\n"); */
     return tasks[currentTask];
 }
 
@@ -59,36 +62,42 @@ bool TaskManager::AddTask(Task* task)
     if(numTasks >= 256)
         return false;
    
+    if (numTasks == 0){
+        printf("set parent pid");
+        task->pcb.pid = 1;
+    }
+
     tasks[numTasks++] = task;
     
-    if (currentTask == -1)
-    {
-        // main process
-        currentTask = 0;
-        tasks[0]->pcb.pid = 999;
-    }
+/*     printf("\nTaskManager::AddTask::1, currentTask:");
+    printInt(currentTask);
+    printf("\nTaskManager::AddTask::1, numTasks:");
+    printInt(numTasks);
+    printf("\n"); */
     return true;
 }
 
 Task* TaskManager::AddTask() {
-    //Task* new_task = new Task(nullptr, nullptr);
     
-    //tasks[numTasks++] = new_task; 
-    Task* new_task = tasks[numTasks++];
+    Task* new_task = new Task(nullptr, nullptr);
     
-    //next_task = new_task;
+    tasks[numTasks] = new_task;
+    ++numTasks;
+
     new_task->pcb.state = READY;
     new_task->pcb.pid = numTasks;
     new_task->pcb.ppid = tasks[currentTask]->pcb.pid;
-
+    
     // copy stack of the current process to new task
     for (size_t i = 0; i < sizeof(tasks[currentTask]->stack); i++){
         new_task->stack[i] = tasks[currentTask]->stack[i];
     }
 
-    //tasks[numTasks]->cpustate = 
-    //tasks[numTasks]->cpustate->ebx = (uint32_t)0;
-    
+/*     printf("\nTaskManager::AddTask::2, currentTask:");
+    printInt(currentTask);
+    printf("\nTaskManager::AddTask::2, numTasks:");
+    printInt(numTasks); */
+
     return new_task;
 }
 
@@ -103,10 +112,9 @@ CPUState* TaskManager::Schedule(CPUState* cpustate)
     if(++currentTask >= numTasks)
         currentTask %= numTasks;
 
+    printTasks();
     printf("\nTaskManager::Schedule, currentTask:");
     printInt(currentTask);
-    printf("\n");
-
     printf("\nTaskManager::Schedule, numTasks:");
     printInt(numTasks);
     printf("\n");

@@ -25,12 +25,18 @@ void SyscallHandler::fork(uint32_t esp) {
     // create new task
     Task* new_task = taskManager->AddTask();
     
-    // Assign stack pointer and syscall return value
+    // Assign stack and base pointer addresses for the new stack space
     uint32_t offset = esp - (uint32_t)(taskManager->GetCurrent()->StackStartAddr());
-    CPUState* fixed_cpustate = (CPUState*)(new_task->StackStartAddr() + offset); 
+    CPUState* fixed_cpustate = (CPUState*)(new_task->StackStartAddr() + offset);
+
+    uint32_t offset2 = ((CPUState*)esp)->ebp - (uint32_t)(taskManager->GetCurrent()->StackStartAddr());
+    fixed_cpustate->ebp = (uint32_t)(new_task->StackStartAddr()) + offset2;
+
     fixed_cpustate->ebx = 0; // syscall return value to indicate its child process
     new_task->SetCPUState(fixed_cpustate);
 
+    // assign ebx as non-zero for parent process syscall return value
+    ((CPUState*)esp)->ebx = taskManager->GetCurrent()->GetPID();
     return;
 }
 
@@ -43,14 +49,6 @@ uint32_t SyscallHandler::HandleInterrupt(uint32_t esp)
     {
         case FORK_INT:
             fork(esp);
-            //taskManager->printTasks();
-            printf("1cpu->ebx: ");
-            printInt((int)cpu->ebx);
-            printf("\n");
-            cpu->ebx = taskManager->GetCurrent()->GetPID();
-            printf("2cpu->ebx: ");
-            printInt((int)cpu->ebx);
-            printf("\n");
             break;
         case 4: // print
             printf((char*)cpu->ebx);
