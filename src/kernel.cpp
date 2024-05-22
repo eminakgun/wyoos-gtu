@@ -58,12 +58,39 @@ char get_digit(int i) {
     return digits[i];
 }
 
-void printInt(int i) {
-    char a = get_digit(i && 0x000003FF);
-    //a = ('0' + i);
+void print_digit(int i) {
+    char a = get_digit(i & 0x000003FF);
+    if (i > 9)
+    {
+        printf("given number is not a digit");
+    }
+    
     char* ptr = &a;
     ++ptr = (char*)'\0';
     printf(&a);
+}
+
+void printInt(int i) {
+    int res[5];
+    int cnt = 0;
+
+    if (i == 0)
+    {
+        print_digit(0);
+    }
+    else {
+        while (i > 0) {
+            int digit = i % 10;
+            res[cnt++] = digit;
+            i /= 10;
+        }
+        --cnt;
+        while (!(cnt < 0))
+        {
+            print_digit(res[cnt--]);
+        }
+    }
+
 }
 
 void printfHex(uint8_t key)
@@ -169,6 +196,8 @@ uint32_t fork();
 void usr_main();
 void strategy();
 void collatz();
+void print_collatz_sequence(int n);
+int long_running_program(int n);
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot_magic*/)
 {
@@ -178,19 +207,19 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     size_t heap = 10*1024*1024;
     MemoryManager memoryManager(heap, (*memupper)*1024 - heap - 10*1024);
     
-    printf("heap: 0x");
+/*     printf("heap: 0x");
     printfHex((heap >> 24) & 0xFF);
     printfHex((heap >> 16) & 0xFF);
     printfHex((heap >> 8 ) & 0xFF);
-    printfHex((heap      ) & 0xFF);
+    printfHex((heap      ) & 0xFF); */
     
     void* allocated = memoryManager.malloc(1024);
-    printf("\nallocated: 0x");
+/*     printf("\nallocated: 0x");
     printfHex(((size_t)allocated >> 24) & 0xFF);
     printfHex(((size_t)allocated >> 16) & 0xFF);
     printfHex(((size_t)allocated >> 8 ) & 0xFF);
     printfHex(((size_t)allocated      ) & 0xFF);
-    printf("\n");
+    printf("\n"); */
 
     GlobalDescriptorTable gdt;
     TaskManager taskManager;    
@@ -226,65 +255,148 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     printf("Initializing Hardware, Stage 2\n");
     //drvManager.ActivateAll();
     */
-    interrupts.Activate();
+    
 
-    printf("\n\n\n\n");
+    //printf("\n\n\n\n");
 
     // Initialize
     Task main(&gdt, usr_main);
     taskManager.AddTask(&main);
-
-    if ((fork()) == 0) // child
-        // TODO exec
-        usr_main();
-    else {
-        printf("Enter forever loop\n");
-        while(1);
+    interrupts.Activate();
+    while (1)
+    {
+        ;//printf("kernel main");
     }
     
 }
 
 uint32_t fork() {
-    uint32_t pid = 65536;
+    uint32_t ebx = 65536;
     // : input list : output list
-    asm volatile("int $0x80" : "=b" (pid) : "a" (FORK_INT));
-    printf("pid after interrupt:");
-    if (65536 == pid)
-        printf("pid is unchanged");
-    else if (pid == 0)
-        printf("pid is zero: ");
+    asm volatile("int $0x80" : "=b" (ebx) : "a" (FORK_INT));
+    //printf("*ebx after interrupt:");
+/*     if (65536 == ebx)
+        printf("ebx is unchanged");
+    else if (ebx == 0)
+        printf("ebx is zero: ");
     else
-        printf("pid is nonzero: ");
+        printf("ebx is nonzero: "); */
+/*     printInt(ebx);
+    printf("\n"); */
+    return ebx;
+}
 
-    printInt(pid);
-    //printf((char*)('0' + pid));
-    printf("\n");
-    return pid;
+void execve(void func()) {
+    uint32_t _func = (uint32_t)func;
+    asm volatile("int $0x80" : : "a" (EXECVE_INT), "b" (_func));
+}
+
+void waitpid(int pid, int* status) {
+    int _status;
+    asm volatile("int $0x80" : "=c" (_status): "a" (WAITPID_INT), "b" (pid));
+    *status = _status;
+    return;
+}
+
+void exit() {
+    asm volatile("int $0x80" : : "a" (EXIT_INT));
 }
 
 void usr_main() {
     printf("Enter usr_main\n");
-    // start user-space processes
-    strategy();
-    // wait all processes to complete
-    while(1);
+    int pid = fork();
+    if (pid == 0) {
+        printf("Enter child forever loop\n");
+        strategy();
+    }
+    else {
+        printf("Enter parent process\n");
+        int status = -1;
+        waitpid(pid, &status);
+        if (status == -1)
+        {
+            printf("waitpid failed!");
+        }
+        else
+            printf("Strategy is terminated!\n");
+        
+        printf("End of user main!\n");
+        exit();
+    }  
 }
 
+
 void strategy() {
-    // fork collatz first
     printf("Enter strategy\n");
-    if ((fork()) == 0){
-        // child
-        printf("strategy::collatz\n");
-        collatz();
-    } 
-    else { // parent
-        printf("Continue strategy\n");
+    int child_pids[6];
+    for (int i = 0; i < 3; i++)
+    {
+        child_pids[i] = fork(); 
+        if (child_pids[i] == 0){
+            printf("Start collatz ");
+            collatz();
+            printf("exit collatz: ");
+            printf("\n");
+            exit();
+        }
     }
+    for (int i = 0; i < 3; i++)
+    {
+        child_pids[3+i] = fork(); 
+        if ((child_pids[3+i]) == 0){
+            printf("Start long_running_program ");
+            printInt(i);
+            printf("\n");
+            long_running_program(1000);
+            printf("exit long_running_program: ");
+            exit();
+        }
+    }
+    for (size_t i = 0; i < 6; i++)
+    {
+        int status;
+        waitpid(child_pids[i], &status);
+        if (status == -1)
+        {
+            printf("waitpid failed!\n");
+        }
+        else
+            printf("child is terminated\n");
+    }
+    printf("all children are terminated!\n");
+    exit();
 }
 
 void collatz() {
-    printf("Enter collatz");
+    //printf("Enter collatz\n");
+    for (int i = 1; i < 100; ++i) {
+        print_collatz_sequence(i);
+    }
+}
+
+void print_collatz_sequence(int n) {
+    /* printInt(n);
+    printf(": "); */
+    while (n != 1) {
+/*         printInt(n);
+        printf(", "); */
+        if (n % 2 == 0) {
+            n /= 2;
+        } else {
+            n = 3 * n + 1;
+        }
+    }
+    /* printInt(1); */
+}
+
+int long_running_program(int n) {
+    int result = 0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            result += i * j;
+        }
+    }
+    return result;
 }
 
 

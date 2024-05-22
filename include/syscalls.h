@@ -9,7 +9,10 @@
 namespace myos
 {
 
+    const uint32_t EXIT_INT = 1;
     const uint32_t FORK_INT = 2;
+    const uint32_t WAITPID_INT = 7;
+    const uint32_t EXECVE_INT = 11;
     
     class SyscallHandler : public hardwarecommunication::InterruptHandler
     {

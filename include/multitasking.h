@@ -19,7 +19,8 @@ namespace myos
         READY,
         RUNNING,
         BLOCKED,
-        TERMINATED
+        TERMINATED,
+        WAITING
     };
 
     
@@ -51,11 +52,14 @@ namespace myos
     } __attribute__((packed));
     
 
+    // process control block
     struct PCB
     {
         uint32_t pid;  // Process ID
         uint32_t ppid; // Parent Process ID
         ProcessState state;
+        uint32_t waitpid;
+        ProcessState waitstate;
     };
     
     class Task
@@ -88,8 +92,29 @@ namespace myos
         Task* GetCurrent();
         Task* AddTask();
         bool AddTask(Task* task);
+        void KillCurrent();
+        int WaitTask(uint32_t pid);
         CPUState* Schedule(CPUState* cpustate);
+        void printState(ProcessState state) {
+            switch (state)
+            {
+                case READY: printf("READY, "); break;
+                case RUNNING: printf("RUNNING, "); break;
+                case BLOCKED: printf("BLOCKED, "); break;
+                case TERMINATED: printf("TERMINATED, "); break;
+                case WAITING: printf("WAITING, "); break;
+                
+                default:
+                    break;
+            }
+            return;
+        }
         void printTasks(){
+            printf("Process Table: currentTask: ");
+            printInt(currentTask);
+            printf(", numTasks: ");
+            printInt(numTasks);
+
             for (size_t i = 0; i < numTasks; i++)
             {
                 printf("\nTask number: ");
@@ -98,17 +123,24 @@ namespace myos
 
                 printf("pid: ");
                 printInt(tasks[i]->pcb.pid);
-                printf("\n\t");
+                printf(", ");
 
                 printf("ppid: ");
                 printInt(tasks[i]->pcb.ppid);
-                printf("\n\t");
+                printf(", ");
 
                 printf("state: ");
-                printInt(tasks[i]->pcb.state);
-                printf("\n");
+                printState(tasks[i]->pcb.state);
+                printf(", ");
+
+                printf("waitpid: ");
+                printInt(tasks[i]->pcb.waitpid);
+                printf(", ");
+
+                printf("waitstate: ");
+                printState(tasks[i]->pcb.waitstate);
             }
-            
+            printf("\n");
         }
     };
     

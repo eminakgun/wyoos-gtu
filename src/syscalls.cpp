@@ -20,7 +20,7 @@ SyscallHandler::~SyscallHandler()
 void printf(char*);
 
 void SyscallHandler::fork(uint32_t esp) {
-    printf("we're in kernel space now\n");
+    /* printf("we're in kernel space now\n"); */
     
     // create new task
     Task* new_task = taskManager->AddTask();
@@ -36,7 +36,7 @@ void SyscallHandler::fork(uint32_t esp) {
     new_task->SetCPUState(fixed_cpustate);
 
     // assign ebx as non-zero for parent process syscall return value
-    ((CPUState*)esp)->ebx = taskManager->GetCurrent()->GetPID();
+    ((CPUState*)esp)->ebx = new_task->GetPID();
     return;
 }
 
@@ -50,6 +50,19 @@ uint32_t SyscallHandler::HandleInterrupt(uint32_t esp)
         case FORK_INT:
             fork(esp);
             break;
+        case EXIT_INT:
+            //taskManager->printTasks(); 
+            taskManager->KillCurrent();
+            esp = (uint32_t)taskManager->Schedule(cpu);
+            break;
+        case WAITPID_INT:
+            if (!(taskManager->WaitTask(cpu->ebx))) {
+                cpu->ecx = -1;
+                //printf("Process to wait is not found\n");
+            }
+            else // switch process since parent is now in waiting state 
+                esp = (uint32_t)taskManager->Schedule(cpu);
+            break;
         case 4: // print
             printf((char*)cpu->ebx);
             break;
@@ -58,7 +71,7 @@ uint32_t SyscallHandler::HandleInterrupt(uint32_t esp)
             break;
     }
 
-    
+    //taskManager->printTasks();    
     return esp;
 }
 
