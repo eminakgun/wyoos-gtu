@@ -197,7 +197,8 @@ void usr_main();
 void strategy();
 void collatz();
 void print_collatz_sequence(int n);
-int long_running_program(int n);
+void long_running_program();
+int _long_running_program(int n);
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot_magic*/)
 {
@@ -307,7 +308,8 @@ void usr_main() {
     int pid = fork();
     if (pid == 0) {
         printf("Enter child forever loop\n");
-        strategy();
+        execve(strategy);
+        //strategy();
     }
     else {
         printf("Enter parent process\n");
@@ -334,7 +336,8 @@ void strategy() {
         child_pids[i] = fork(); 
         if (child_pids[i] == 0){
             printf("Start collatz ");
-            collatz();
+            execve(collatz);
+            //collatz();
             printf("exit collatz: ");
             printf("\n");
             exit();
@@ -347,7 +350,7 @@ void strategy() {
             printf("Start long_running_program ");
             printInt(i);
             printf("\n");
-            long_running_program(1000);
+            execve(long_running_program);
             printf("exit long_running_program: ");
             exit();
         }
@@ -372,6 +375,7 @@ void collatz() {
     for (int i = 1; i < 100; ++i) {
         print_collatz_sequence(i);
     }
+    exit();
 }
 
 void print_collatz_sequence(int n) {
@@ -389,7 +393,7 @@ void print_collatz_sequence(int n) {
     /* printInt(1); */
 }
 
-int long_running_program(int n) {
+int _long_running_program(int n) {
     int result = 0;
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
@@ -397,6 +401,15 @@ int long_running_program(int n) {
         }
     }
     return result;
+}
+
+void long_running_program() {
+    int result = _long_running_program(1000);
+    printf("LRP result: ");
+    printInt(result);
+    printf("\n");
+    exit();
+    return;
 }
 
 

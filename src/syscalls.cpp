@@ -40,6 +40,11 @@ void SyscallHandler::fork(uint32_t esp) {
     return;
 }
 
+void SyscallHandler::execve(CPUState* cpu) {
+    cpu->esp = cpu->ebp; // reset stack pointer
+    cpu->eip = cpu->ebx; // set instruction pointer for requested function
+}
+
 uint32_t SyscallHandler::HandleInterrupt(uint32_t esp)
 {
     CPUState* cpu = (CPUState*)esp;
@@ -49,6 +54,9 @@ uint32_t SyscallHandler::HandleInterrupt(uint32_t esp)
     {
         case FORK_INT:
             fork(esp);
+            break;
+        case EXECVE_INT:
+            execve(cpu);
             break;
         case EXIT_INT:
             //taskManager->printTasks(); 
