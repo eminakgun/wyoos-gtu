@@ -57,9 +57,9 @@ namespace myos
     {
         uint32_t pid;  // Process ID
         uint32_t ppid; // Parent Process ID
-        ProcessState state;
-        uint32_t waitpid;
-        ProcessState waitstate;
+        ProcessState state; // State of the process
+        uint32_t waitpid; // PID of the process being waited for
+        ProcessState waitstate; // State of the process being waited for
     };
     
     class Task
