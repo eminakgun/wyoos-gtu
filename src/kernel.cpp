@@ -207,57 +207,12 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     uint32_t* memupper = (uint32_t*)(((size_t)multiboot_structure) + 8);
     size_t heap = 10*1024*1024;
     MemoryManager memoryManager(heap, (*memupper)*1024 - heap - 10*1024);
-    
-/*     printf("heap: 0x");
-    printfHex((heap >> 24) & 0xFF);
-    printfHex((heap >> 16) & 0xFF);
-    printfHex((heap >> 8 ) & 0xFF);
-    printfHex((heap      ) & 0xFF); */
-    
-    void* allocated = memoryManager.malloc(1024);
-/*     printf("\nallocated: 0x");
-    printfHex(((size_t)allocated >> 24) & 0xFF);
-    printfHex(((size_t)allocated >> 16) & 0xFF);
-    printfHex(((size_t)allocated >> 8 ) & 0xFF);
-    printfHex(((size_t)allocated      ) & 0xFF);
-    printf("\n"); */
 
     GlobalDescriptorTable gdt;
     TaskManager taskManager;    
     InterruptManager interrupts(0x20, &gdt, &taskManager);
     SyscallHandler syscalls(&interrupts, 0x80, &taskManager);
     
-    /*
-    printf("Initializing Hardware, Stage 1\n");
-    
-    DriverManager drvManager;
-    
-        #ifdef GRAPHICSMODE
-            KeyboardDriver keyboard(&interrupts, &desktop);
-        #else
-            PrintfKeyboardEventHandler kbhandler;
-            KeyboardDriver keyboard(&interrupts, &kbhandler);
-        #endif
-        drvManager.AddDriver(&keyboard);
-        
-    
-        #ifdef GRAPHICSMODE
-            MouseDriver mouse(&interrupts, &desktop);
-        #else
-            MouseToConsole mousehandler;
-            MouseDriver mouse(&interrupts, &mousehandler);
-        #endif
-        drvManager.AddDriver(&mouse);
-        
-        PeripheralComponentInterconnectController PCIController;
-        PCIController.SelectDrivers(&drvManager, &interrupts);
-
-        
-    printf("Initializing Hardware, Stage 2\n");
-    //drvManager.ActivateAll();
-    */
-    
-
     //printf("\n\n\n\n");
 
     // Initialize
@@ -309,7 +264,6 @@ void usr_main() {
     if (pid == 0) {
         printf("Enter child forever loop\n");
         execve(strategy);
-        //strategy();
     }
     else {
         printf("Enter parent process\n");
@@ -335,24 +289,24 @@ void strategy() {
     {
         child_pids[i] = fork(); 
         if (child_pids[i] == 0){
-            printf("Start collatz ");
+           /*  printf("Start collatz "); */
             execve(collatz);
             //collatz();
-            printf("exit collatz: ");
+/*             printf("exit collatz: ");
             printf("\n");
-            exit();
+            exit(); */
         }
     }
     for (int i = 0; i < 3; i++)
     {
         child_pids[3+i] = fork(); 
         if ((child_pids[3+i]) == 0){
-            printf("Start long_running_program ");
+/*             printf("Start long_running_program ");
             printInt(i);
-            printf("\n");
+            printf("\n"); */
             execve(long_running_program);
-            printf("exit long_running_program: ");
-            exit();
+/*             printf("exit long_running_program: ");
+            exit(); */
         }
     }
     for (size_t i = 0; i < 6; i++)
@@ -366,7 +320,7 @@ void strategy() {
         else
             printf("child is terminated\n");
     }
-    printf("all children are terminated!\n");
+    //printf("all children are terminated!\n");
     exit();
 }
 
