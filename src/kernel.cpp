@@ -203,48 +203,56 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     
     //printf("\n\n\n\n");
 
-    // Initialize
+    // Load first program
+    // we don't need any syscall since we're in kernal right now
+    // after adding a new task, it'll get scheduled after the first timer interrupt
     Task main(&gdt, usr_main);
     taskManager.AddTask(&main);
     interrupts.Activate();
     while (1)
     {
-        ;//printf("kernel main");
+        ;
     }
     
 }
 
 // POSIX Interface
 
+// Function to fork a new process
 uint32_t fork() {
     uint32_t ebx = 65536;
-    // : input list : output list
+    // Inline assembly to invoke the fork system call
+    // "int $0x80" - Interrupt 0x80 is used to make a system call
+    // "=b" (ebx) - Output: store the result in ebx register
+    // "a" (FORK_INT) - Input: system call number for fork
     asm volatile("int $0x80" : "=b" (ebx) : "a" (FORK_INT));
-    //printf("*ebx after interrupt:");
-/*     if (65536 == ebx)
-        printf("ebx is unchanged");
-    else if (ebx == 0)
-        printf("ebx is zero: ");
-    else
-        printf("ebx is nonzero: "); */
-/*     printInt(ebx);
-    printf("\n"); */
     return ebx;
 }
 
+// Function to execute a new program
 void execve(void func()) {
     uint32_t _func = (uint32_t)func;
+    // No outputs
+    // "a" (EXECVE_INT) - Input: system call number for execve
+    // "b" (_func) - Input: address of the function to execute
     asm volatile("int $0x80" : : "a" (EXECVE_INT), "b" (_func));
 }
 
+// Function to wait for a process to change state
 void waitpid(int pid, int* status) {
     int _status;
+    // "=c" (_status) - Output: store the result in _status variable
+    // "a" (WAITPID_INT) - Input: system call number for waitpid
+    // "b" (pid) - Input: process ID to wait for
     asm volatile("int $0x80" : "=c" (_status): "a" (WAITPID_INT), "b" (pid));
     *status = _status;
     return;
 }
 
+// Function to terminate the calling process
 void exit() {
+    // No outputs
+    // "a" (EXIT_INT) - Input: system call number for exit
     asm volatile("int $0x80" : : "a" (EXIT_INT));
 }
 
