@@ -170,18 +170,6 @@ void sysprintf(char* str)
     asm volatile("int $0x80" : : "a" (4), "b" (str));
 }
 
-void taskA()
-{
-    while(true)
-        sysprintf("A");
-}
-
-void taskB()
-{
-    while(true)
-        sysprintf("B");
-}
-
 typedef void (*constructor)();
 extern "C" constructor start_ctors;
 extern "C" constructor end_ctors;
@@ -202,7 +190,7 @@ int _long_running_program(int n);
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot_magic*/)
 {
-    printf("Hello World! --- http://www.AlgorithMan.de\n");
+    printf("Hello kernel!\n");
 
     uint32_t* memupper = (uint32_t*)(((size_t)multiboot_structure) + 8);
     size_t heap = 10*1024*1024;
@@ -225,6 +213,8 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*multiboot
     }
     
 }
+
+// POSIX Interface
 
 uint32_t fork() {
     uint32_t ebx = 65536;
@@ -258,15 +248,18 @@ void exit() {
     asm volatile("int $0x80" : : "a" (EXIT_INT));
 }
 
+
+// User main function that kernel loads first
 void usr_main() {
-    printf("Enter usr_main\n");
-    int pid = fork();
+    //printf("Enter usr_main\n");
+
+    int pid = fork(); // fork a new process to execute given strategy
     if (pid == 0) {
-        printf("Enter child forever loop\n");
         execve(strategy);
     }
     else {
-        printf("Enter parent process\n");
+        //printf("Enter parent process\n");
+        // wait strategy process to terminate
         int status = -1;
         waitpid(pid, &status);
         if (status == -1)
@@ -277,50 +270,68 @@ void usr_main() {
             printf("Strategy is terminated!\n");
         
         printf("End of user main!\n");
-        exit();
+
+        // issue a exit syscall so that this process
+        // won't be scheduled anymore.
+        exit(); 
     }  
 }
 
 
 void strategy() {
-    printf("Enter strategy\n");
-    int child_pids[6];
-    for (int i = 0; i < 3; i++)
-    {
-        child_pids[i] = fork(); 
-        if (child_pids[i] == 0){
-           /*  printf("Start collatz "); */
-            execve(collatz);
-            //collatz();
-/*             printf("exit collatz: ");
-            printf("\n");
-            exit(); */
+    //printf("Enter strategy\n");
+    int collatz_pids[3];
+    int lrp_pids[3];
+
+    // fork collatz process 3 times
+    for (int i = 0; i < 3; i++) {
+        collatz_pids[i] = fork(); 
+        if (collatz_pids[i] == 0) {
+            collatz();
+            //execve(collatz);
         }
     }
-    for (int i = 0; i < 3; i++)
-    {
-        child_pids[3+i] = fork(); 
-        if ((child_pids[3+i]) == 0){
-/*             printf("Start long_running_program ");
-            printInt(i);
-            printf("\n"); */
-            execve(long_running_program);
-/*             printf("exit long_running_program: ");
-            exit(); */
+
+    // fork long_running_program 3 times
+    for (int i = 0; i < 3; i++) {
+        lrp_pids[i] = fork(); 
+        if ((lrp_pids[i]) == 0){
+            long_running_program();
+            //execve(long_running_program);
         }
     }
-    for (size_t i = 0; i < 6; i++)
-    {
+
+    // wait all children processes to be terminated
+    for (int i = 0; i < 3; i++) {
         int status;
-        waitpid(child_pids[i], &status);
+        printf("waitpid: ");
+        printInt(i);
+        printf(", ");
+        waitpid(collatz_pids[i], &status);
         if (status == -1)
         {
             printf("waitpid failed!\n");
         }
         else
-            printf("child is terminated\n");
+            printf("collatz child is terminated\n");
+    }
+    for (int i = 0; i < 3; i++) {
+        int status;
+        printf("waitpid: ");
+        printInt(i);
+        printf(", ");
+        waitpid(lrp_pids[i], &status);
+        if (status == -1)
+        {
+            printf("waitpid failed!\n");
+        }
+        else
+            printf("lrp child is terminated\n");
     }
     //printf("all children are terminated!\n");
+
+    // issue a exit syscall so that this process
+    // won't be scheduled anymore.
     exit();
 }
 
@@ -329,6 +340,9 @@ void collatz() {
     for (int i = 1; i < 100; ++i) {
         print_collatz_sequence(i);
     }
+
+    // issue a exit syscall so that this process
+    // won't be scheduled anymore.
     exit();
 }
 
@@ -359,11 +373,13 @@ int _long_running_program(int n) {
 
 void long_running_program() {
     int result = _long_running_program(1000);
-    printf("LRP result: ");
-    printInt(result);
-    printf("\n");
+    //printf("LRP result: ");
+    //printInt(result);
+    //printf("\n");
+
+    // issue a exit syscall so that this process
+    // won't be scheduled anymore.
     exit();
-    return;
 }
 
 
