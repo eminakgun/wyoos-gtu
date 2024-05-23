@@ -24,6 +24,7 @@ namespace myos
         
         virtual myos::common::uint32_t HandleInterrupt(myos::common::uint32_t esp);
         void fork(uint32_t esp);
+        void execve(CPUState* cpu);
     };
     
     
