@@ -31,17 +31,35 @@ The main objectives of the project are:
 - **Syscall Handler**: Handles system calls initiated by processes, interprets syscall requests, and interacts with the Task Manager to perform process-related operations.
 - **Process Control Block (PCB)**: Stores essential information about a process, including PID, PPID, process state, waitpid, and wait state.
 
-### 4.2 System Architecture
+### 4.2 System Architecture and Scheduling
+
+#### System Architecture
 - The system follows a modular architecture, with separate components for managing tasks and handling syscalls.
 - The Task Manager interacts with the Syscall Handler to perform process-related operations based on syscall requests.
 
-## 5. Implementation
+#### Scheduling Algorithm: Round-Robin
+- The Task Manager implements a round-robin scheduling algorithm to manage task execution efficiently.
+- In round-robin scheduling, tasks are executed in a cyclic manner, with each task receiving a time slice or quantum of CPU time before being preempted to allow the next task to run.
+- This scheduling algorithm ensures fair execution of tasks and prevents any single task from monopolizing the CPU.
+
+## 5. Implementation Details
 
 The project is implemented in C++ and organized into header files (`*.h`) and source files (`*.cpp`). The project directory structure includes:
 
 - `include/`: Contains header files for classes and structs used in the project.
 - `src/`: Contains source files for implementing the classes and structs.
-- `main.cpp`: Main entry point of the program for testing the functionalities of the classes and structs.
+- `Makefile`: Makefile to build and run the project. 
+
+
+### Task Manager
+- The Task Manager module includes the implementation of the round-robin scheduling algorithm.
+- It maintains a queue of tasks and allocates CPU time to each task in a cyclic manner.
+- When a task's time slice expires, it is preempted, and the next task in the queue is scheduled to run.
+
+### Syscall Handler
+- The Syscall Handler interacts with the Task Manager to schedule and manage tasks based on syscall requests.
+- It ensures that processes are scheduled and executed according to the round-robin algorithm's principles.
+
 
 ## 6. Challenges
 
